@@ -3,6 +3,7 @@ import { CardPaymentDto } from "src/dtos/cardPayment.dto";
 import { Client } from "src/entities/client.entity";
 import { Invoice, InvoiceStatus } from "src/entities/invoice.entity";
 import { InvoiceItem } from "src/entities/invoiceItem.entity";
+import { Payment } from "src/entities/payment.entity";
 import { Project } from "src/entities/project.entity";
 import { EntityManager, getConnection } from "typeorm";
 import { StripeService } from "./stripe.service";
@@ -15,7 +16,7 @@ export class AccountingService {
     public async getInvoice(id: string, txn: EntityManager) {
         const invoice = await txn.findOne(Invoice, {
             where: {id},
-            relations: ['items', 'client'],
+            relations: ['items', 'client', 'payments'],
         });
 
         if (!invoice) {
@@ -25,11 +26,25 @@ export class AccountingService {
         return invoice;
     }
 
+    public async getInvoices() {
+        return await Invoice.find({relations: ['client', 'items', 'payments']});
+    }
+
+    public async getClientInvoices(client: Client) {
+        return await Invoice.find({
+            where: {
+                client: {
+                    id: client.id,
+                }
+            },
+        })
+    }
+
     public async getNextInvoiceId(client: Client, txn: EntityManager, leadingZeros = 3) {
 
         const {count} = await txn.createQueryBuilder(Invoice, 'invoice')
             .where('clientId = :clientId', {clientId: client.id})
-            .andWhere('id LIKE :id', {id: `${client.invoicePrefix}-%`})
+            .andWhere('invoiceId LIKE :id', {id: `${client.invoicePrefix}-%`})
             .select('COUNT(id)', 'count')
             .getRawOne();
 
@@ -55,7 +70,7 @@ export class AccountingService {
             }
 
             const invoice = new Invoice();
-            invoice.id = await this.getNextInvoiceId(project.client, trans);
+            invoice.invoiceId = await this.getNextInvoiceId(project.client, trans);
             invoice.date = new Date();
             invoice.client = project.client;
             invoice.status = InvoiceStatus.INVOICED;
@@ -68,7 +83,7 @@ export class AccountingService {
                 if (balance != 0) {
                     const item = new InvoiceItem();
                     item.invoice = invoice;
-                    item.id = `${invoice.id}-${i + 1}`;
+                    item.invoiceItemId = `${invoice.invoiceId}-${i + 1}`;
                     item.title = task.title;
                     item.description = task.description;
                     item.rate = project.client.rate;
@@ -99,7 +114,7 @@ export class AccountingService {
                 throw new Error("Amount exceeds total amounted owed by: " + (amount - invoice.totalAmountOwed));
             }
 
-            await this.stripe.chargeClient(invoice.client, amount, card);
+            await this.stripe.chargeClient(invoice.client, amount, card, `Invoice #${invoice.invoiceId}`);
 
             invoice.amountPaid += amount;
 
@@ -107,7 +122,13 @@ export class AccountingService {
                 invoice.status = InvoiceStatus.PAID;
             }
 
+            const payment = new Payment();
+            payment.invoice = invoice;
+            payment.client = invoice.client;
+            payment.amount = amount;
+
             await trans.save(invoice);
+            await trans.save(payment);
 
             return invoice;
         });

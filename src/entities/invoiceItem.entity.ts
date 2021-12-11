@@ -1,4 +1,4 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn, UpdateDateColumn } from "typeorm";
+import { BaseEntity, Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Invoice } from "./invoice.entity";
 
 @Entity()
@@ -9,8 +9,12 @@ export class InvoiceItem extends BaseEntity {
     @CreateDateColumn()
     public createdAt: Date;
 
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn('uuid')
     public id: string;
+
+    @Column()
+    @Index()
+    public invoiceItemId: string;
 
     @ManyToOne(type => Invoice, invoice => invoice.items)
     public invoice: Invoice;

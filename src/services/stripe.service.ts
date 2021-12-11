@@ -50,7 +50,8 @@ export class StripeService {
         console.log(paymentMethod);
         
         const intent = await this.stripe.paymentIntents.create({
-            amount,
+            // multiply by ten to use dollars instead of cents
+            amount: amount * 100,
             currency: 'usd',
             payment_method: paymentMethod.id,
             customer: client.stripeId,
@@ -58,5 +59,13 @@ export class StripeService {
         });
 
         console.log(intent);
+
+        const confirmedIntent = await this.stripe.paymentIntents.confirm(intent.id);
+
+        console.log(confirmedIntent);
+
+        //const capturedPayment = await this.stripe.paymentIntents.capture(confirmedIntent.id);
+
+        //console.log(capturedPayment);
     }
 }

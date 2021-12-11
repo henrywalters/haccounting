@@ -1,6 +1,7 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from "typeorm";
+import { BaseEntity, Column, CreateDateColumn, Entity, Index, ManyToOne, OneToMany, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Client } from "./client.entity";
 import { InvoiceItem } from "./invoiceItem.entity";
+import { Payment } from "./payment.entity";
 
 export enum InvoiceStatus {
     INVOICED = "Invoiced",
@@ -17,8 +18,12 @@ export class Invoice extends BaseEntity {
     @CreateDateColumn()
     public createdAt: Date;
 
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn('uuid')
     public id: string;
+
+    @Column()
+    @Index()
+    public invoiceId: string;
 
     @Column({type: "datetime"})
     public date: Date;
@@ -34,6 +39,9 @@ export class Invoice extends BaseEntity {
 
     @OneToMany(type => InvoiceItem, item => item.invoice)
     public items: InvoiceItem[];
+
+    @OneToMany(type => Payment, payment => payment.invoice)
+    public payments: Payment[];
 
     public get totalAmount() {
         let sum = 0;
