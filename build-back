@@ -1,0 +1,27 @@
+#!/bin/sh
+
+LOG_FILE=server.log
+ERROR_FILE=error.log
+
+echo "Building haccounting Backend"
+
+cd server
+
+npm install
+npm run build
+
+echo "Running migrations"
+npm run typeorm -- migration:run
+
+usage=$(lsof -n -i -P | grep LISTEN | grep :4200 | awk '{print $2}')
+
+if [[ "$usage" != "" ]]; then
+  echo "Killing previous instance pid: $usage"
+  kill -9 $usage
+fi
+
+echo "Starting server"
+
+nohup node dist/main.js > server.log 2>error.log &
+
+echo "Success"
