@@ -1,9 +1,10 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, IsUUID } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from "class-validator";
 import { ProjectStatus } from "src/entities/project.entity";
 
 export class ProjectDto {
 
     @IsString()
+    @IsNotEmpty()
     public title: string;
 
     @IsString()
@@ -17,6 +18,7 @@ export class ProjectCreateDto extends ProjectDto {
 
 export class ProjectTaskDto {
     @IsString()
+    @IsNotEmpty()
     public title: string;
 
     @IsString()
@@ -25,9 +27,17 @@ export class ProjectTaskDto {
 
     @IsNumber()
     public estimatedHours: number;
+
+    @IsBoolean()
+    public complete: boolean;
 }
 
 export class TaskWorkDto {
     @IsNumber()
+    @Min(0)
     public hours: number;
+
+    @IsString()
+    @IsNotEmpty()
+    public notes: string;
 }

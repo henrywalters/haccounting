@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { ProjectDto, ProjectTaskDto } from "src/dtos/project.dto";
+import { ProjectDto, ProjectTaskDto, TaskWorkDto } from "src/dtos/project.dto";
 import { Client } from "src/entities/client.entity";
+import { LoggedHours } from "src/entities/loggedHours.entity";
 import { Project } from "src/entities/project.entity";
 import { ProjectTask } from "src/entities/projectTask.entity";
 
@@ -49,11 +50,22 @@ export class ProjectService {
                     id: projectId,
                 }
             },
+            relations: [
+                'loggedHours',
+            ],
+            order: {
+                'createdOn': 'ASC'
+            }
         });
     }
 
     public async getProjectTask(id: string) {
-        const task = await ProjectTask.findOne({where: {id}});
+        const task = await ProjectTask.findOne({
+            where: {id},
+            relations: [
+                'loggedHours',
+            ]
+        });
         if (!task) {
             throw new NotFoundException("Task does not exist");
         }
@@ -81,9 +93,20 @@ export class ProjectService {
 
     public async updateProjectTask(task: ProjectTask, dto: ProjectTaskDto) {
         task.title = dto.title;
-        if (dto.description) task.description = dto.description;
-        if (dto.estimatedHours) task.estimatedHours = dto.estimatedHours;
+        task.complete = dto.complete;
+        task.description = dto.description;
+        task.estimatedHours = dto.estimatedHours;
         await task.save();
         return task;
+    }
+
+    public async workOnTask(task: ProjectTask, dto: TaskWorkDto) {
+        const loggedHours = new LoggedHours();
+        loggedHours.hours = dto.hours;
+        loggedHours.notes = dto.notes;
+        loggedHours.task = task;
+        task.actualHours += dto.hours;
+        await task.save();
+        await loggedHours.save();
     }
 }

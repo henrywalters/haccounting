@@ -1,4 +1,5 @@
-import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { LoggedHours } from "./loggedHours.entity";
 import { Project } from "./project.entity";
 
 @Entity()
@@ -8,6 +9,12 @@ export class ProjectTask extends BaseEntity {
 
     @ManyToOne(type => Project, project => project.tasks)
     public project: Project;
+
+    @CreateDateColumn()
+    public createdOn: Date;
+
+    @UpdateDateColumn()
+    public lastUpdate: Date;
 
     @Column()
     public title: string;
@@ -26,5 +33,7 @@ export class ProjectTask extends BaseEntity {
 
     @Column({type: "float", default: 0})
     public billedHours: number;
-
+    
+    @OneToMany(type => LoggedHours, hours => hours.task)
+    public loggedHours: LoggedHours[];
 }

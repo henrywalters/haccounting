@@ -1,4 +1,4 @@
-import { Body, Controller, Get, InternalServerErrorException, Param, ParseUUIDPipe, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, InternalServerErrorException, Param, ParseUUIDPipe, Post, Put } from "@nestjs/common";
 import { ProjectCreateDto, ProjectDto, ProjectTaskDto, TaskWorkDto } from "src/dtos/project.dto";
 import { AccountingService } from "src/services/accounting.service";
 import { ProjectService } from "src/services/project.service";
@@ -32,6 +32,12 @@ export class ProjectsController {
     public async getProject(@Param('id', ParseUUIDPipe) id: string) {
         return await this.projects.getProject(id);
     }
+
+    @Delete(':id')
+    public async deleteProject(@Param('id', ParseUUIDPipe) id: string) {
+        const project = await this.projects.getProject(id);
+        await project.remove();
+    }
     
     @Get(':projectId/tasks')
     public async getProjectTask(@Param('projectId', ParseUUIDPipe) projectId: string) {
@@ -48,11 +54,16 @@ export class ProjectsController {
         return await this.projects.updateProjectTask(await this.projects.getProjectTask(id), dto);
     }
 
+    @Delete(':projectId/tasks/:id')
+    public async deleteProjectTask(@Param('id', ParseUUIDPipe) id: string) {
+        const task = await this.projects.getProjectTask(id);
+        await task.remove();
+    }
+
     @Post(':projectId/tasks/:id/work')
     public async workOnProjectTask(@Param('projectId', ParseUUIDPipe) projectId: string, @Param('id', ParseUUIDPipe) id: string, @Body() dto: TaskWorkDto) {
         const task = await this.projects.getProjectTask(id);
-        task.actualHours += dto.hours;
-        await task.save();
+        await this.projects.workOnTask(task, dto);
         return task;
     }
 

@@ -26,16 +26,18 @@ export class BadRequestExceptionFilter implements ExceptionFilter {
                 let keyName = parts[0];
                 let errorMsg = parts.slice(1).join(" ");
 
+                console.log(keyName);
+
                 switch(errorMsg) {
                     case "must be an email":
                         errorMsg = "Valid email required";
                         break;
                     case "should not be empty":
-                        errorMsg = `${HCore.Casing.toType(keyName, CaseType.StdCase)} is required`;
+                        errorMsg = `${HCore.Casing.toType(keyName, CaseType.StdCase)} ${keyName[keyName.length - 1] === 's' ? 'are' : 'is'} required`;
                         break;
                 }
 
-                body[parts[0]] = errorMsg;
+                body[parts[0]] = HCore.Casing.toType(keyName, CaseType.StdCase) + ' ' + errorMsg;
             }
         } else {
             body = error.message ? error.message : error ? error : "Unknown error";

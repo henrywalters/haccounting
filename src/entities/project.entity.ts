@@ -1,5 +1,6 @@
 import { BaseEntity, Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Client } from "./client.entity";
+import { LoggedHours } from "./loggedHours.entity";
 import { ProjectTask } from "./projectTask.entity";
 
 export enum ProjectStatus {
