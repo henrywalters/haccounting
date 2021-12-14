@@ -34,9 +34,9 @@ export class StripeService {
         return client;
     }
 
-    public async chargeClient(client: Client, amount: number, card: CardPaymentDto, description?: string) {
+    public async chargeClient(client: Client, amount: number, cardId: string, description?: string) {
         
-        const paymentMethod = await this.stripe.paymentMethods.create({
+        /*const paymentMethod = await this.stripe.paymentMethods.create({
             // @ts-ignore
             type: 'card',
             card: {
@@ -47,13 +47,19 @@ export class StripeService {
             }
         });
 
-        console.log(paymentMethod);
+        console.log(paymentMethod);*/
         
         const intent = await this.stripe.paymentIntents.create({
             // multiply by ten to use dollars instead of cents
             amount: amount * 100,
             currency: 'usd',
-            payment_method: paymentMethod.id,
+            payment_method_data: {
+                // @ts-ignore
+                type: 'card',
+                card: {
+                    token: cardId,
+                }
+            },
             customer: client.stripeId,
             description,
         });

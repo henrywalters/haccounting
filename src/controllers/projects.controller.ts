@@ -32,7 +32,7 @@ export class ProjectsController {
     public async getProject(@Param('id', ParseUUIDPipe) id: string) {
         return await this.projects.getProject(id);
     }
-
+    
     @Get(':projectId/tasks')
     public async getProjectTask(@Param('projectId', ParseUUIDPipe) projectId: string) {
         return await this.projects.getProjectTasks(projectId);

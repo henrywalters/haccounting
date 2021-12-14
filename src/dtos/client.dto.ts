@@ -1,10 +1,11 @@
-import { IsBoolean, IsNumber, IsObject, IsOptional, IsPhoneNumber, IsString, IsUUID, ValidateNested } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsNumber, IsObject, IsOptional, IsPhoneNumber, IsString, IsUUID, ValidateNested } from "class-validator";
 import { Type } from 'class-transformer';
 import { AddressDto } from "./address.dto";
 import { CardPaymentDto } from "./cardPayment.dto";
 
 export class ClientInfoDto {
     @IsString()
+    @IsNotEmpty()
     public name: string;
 
     @IsNumber()
@@ -47,7 +48,6 @@ export class ClientPaymentDto {
     @IsNumber()
     public amount: number;
 
-    @ValidateNested()
-    @Type(() => CardPaymentDto)
-    public card: CardPaymentDto;
+    @IsString()
+    public cardId: string;
 }

@@ -16,7 +16,7 @@ export class AccountingService {
     public async getInvoice(id: string, txn: EntityManager) {
         const invoice = await txn.findOne(Invoice, {
             where: {id},
-            relations: ['items', 'client', 'payments'],
+            relations: ['items', 'client', 'payments', 'client.billingAddress', 'client.shippingAddress'],
         });
 
         if (!invoice) {
@@ -107,14 +107,14 @@ export class AccountingService {
         })
     }
 
-    public async payInvoice(invoiceId: string, amount: number, card: CardPaymentDto) {
+    public async payInvoice(invoiceId: string, amount: number, cardId: string) {
         return await getConnection().transaction(async trans => {
             const invoice = await this.getInvoice(invoiceId, trans);
             if (amount > invoice.totalAmountOwed) {
                 throw new Error("Amount exceeds total amounted owed by: " + (amount - invoice.totalAmountOwed));
             }
 
-            await this.stripe.chargeClient(invoice.client, amount, card, `Invoice #${invoice.invoiceId}`);
+            await this.stripe.chargeClient(invoice.client, amount, cardId, `Invoice #${invoice.invoiceId}`);
 
             invoice.amountPaid += amount;
 

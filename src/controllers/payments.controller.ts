@@ -12,7 +12,7 @@ export class PaymentsController {
     @Post()
     public async clientPayment(@Body() body: ClientPaymentDto) {
         try {
-            return await this.accounting.payInvoice(body.invoiceId, body.amount, body.card);
+            return await this.accounting.payInvoice(body.invoiceId, body.amount, body.cardId);
         } catch (e) {
             throw new InternalServerErrorException(e.message);
         }

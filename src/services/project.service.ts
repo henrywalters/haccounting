@@ -36,7 +36,7 @@ export class ProjectService {
 
     public async getProjects() {
         const projects = await Project.find({
-            relations: ['client',]
+            relations: ['client', 'tasks']
         });
 
         return projects;
