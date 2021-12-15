@@ -75,6 +75,15 @@ export class ProjectsController {
             console.log(e);
             throw new InternalServerErrorException(e.message);
         }
-        
+    }
+
+    @Post(':projectId/quote')
+    public async createQuoteForProject(@Param('projectId', ParseUUIDPipe) projectId: string) {
+        try {
+            return await this.accounting.createQuoteForProject(projectId);
+        } catch (e) {
+            console.log(e);
+            throw new InternalServerErrorException(e.message);
+        }
     }
 }

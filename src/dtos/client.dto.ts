@@ -23,8 +23,7 @@ export class ClientInfoDto {
     public phone: string;
 
     @IsString()
-    @IsOptional()
-    public invoicePrefix?: string;
+    public invoicePrefix: string;
 }
 
 export class ClientAddressesDto {

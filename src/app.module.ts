@@ -10,6 +10,7 @@ import { ProjectService } from './services/project.service';
 import { PaymentsController } from './controllers/payments.controller';
 import { ProjectsController } from './controllers/projects.controller';
 import { InvoicesController } from './controllers/invoices.controller';
+import { QuotesController } from './controllers/quote.controller';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { InvoicesController } from './controllers/invoices.controller';
     PaymentsController,
     ProjectsController,
     InvoicesController,
+    QuotesController,
   ],
   providers: [
     RolladeckService, 
