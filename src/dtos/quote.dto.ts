@@ -28,3 +28,13 @@ export class QuoteItemDto {
     quantity: number;
 
 }
+
+export class QuoteApproveDto {
+    @IsString()
+    @IsNotEmpty()
+    public signedName: string;
+
+    @IsString()
+    @IsNotEmpty()
+    public signedDate: string;
+}

@@ -1,14 +1,15 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { CardPaymentDto } from "src/dtos/cardPayment.dto";
 import { InvoiceDto } from "src/dtos/invoice.dto";
-import { QuoteDto } from "src/dtos/quote.dto";
+import { QuoteApproveDto, QuoteDto } from "src/dtos/quote.dto";
 import { Client } from "src/entities/client.entity";
 import { Invoice, InvoiceStatus } from "src/entities/invoice.entity";
 import { InvoiceItem } from "src/entities/invoiceItem.entity";
 import { Payment } from "src/entities/payment.entity";
-import { Project } from "src/entities/project.entity";
+import { Project, ProjectStatus } from "src/entities/project.entity";
 import { Quote, QuoteStatus } from "src/entities/quote.entity";
 import { QuoteItem } from "src/entities/quoteItem.entity";
+import { Signature } from "src/entities/signature.entity";
 import { EntityManager, getConnection } from "typeorm";
 import { StripeService } from "./stripe.service";
 
@@ -134,14 +135,11 @@ export class AccountingService {
                     item.quantity = balance;
 
                     items.push(item);
-
-                    task.billedHours += balance;
-                    await trans.save(task);
                 }
             }
 
             if (items.length === 0) {
-                throw new Error("Nothing to be billed for this project");
+                throw new Error("Nothing to be quoted for this project");
             }
 
             await trans.save(quote);
@@ -149,6 +147,18 @@ export class AccountingService {
 
             return quote;
         })
+    }
+
+    public async approveQuote(quoteId: string, dto: QuoteApproveDto) {
+        return await getConnection().transaction(async trans => {
+            const quote = await this.getQuote(quoteId, trans);
+            const signature = new Signature();
+            signature.signedName = dto.signedName;
+            signature.signedDate = dto.signedDate;
+            quote.approved = true;
+            await trans.save(signature);
+            await trans.save(quote);
+        });
     }
 
     // Invoices
@@ -277,7 +287,7 @@ export class AccountingService {
             if (items.length === 0) {
                 throw new Error("Nothing to be billed for this project");
             }
-
+            
             await trans.save(invoice);
             await trans.save(items);
 

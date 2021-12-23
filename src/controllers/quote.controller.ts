@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from "@nestjs/common";
 import { InvoiceDto } from "src/dtos/invoice.dto";
-import { QuoteDto } from "src/dtos/quote.dto";
+import { QuoteApproveDto, QuoteDto } from "src/dtos/quote.dto";
 import { AccountingService } from "src/services/accounting.service";
 import { getConnection } from "typeorm";
 
@@ -24,5 +24,10 @@ export class QuotesController {
         return await getConnection().transaction(async trans => {
             return await this.accounting.getQuote(id, trans);
         });
+    }
+
+    @Post(':id/approve')
+    public async approveQuote(@Param('id', ParseUUIDPipe) id: string, @Body() dto: QuoteApproveDto) {
+        return await this.accounting.approveQuote(id, dto);
     }
 }

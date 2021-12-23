@@ -1,8 +1,9 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, Index, ManyToOne, OneToMany, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { BaseEntity, Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Client } from "./client.entity";
 import { InvoiceItem } from "./invoiceItem.entity";
 import { Payment } from "./payment.entity";
 import { QuoteItem } from "./quoteItem.entity";
+import { Signature } from "./signature.entity";
 
 export enum QuoteStatus {
     PENDING = "Pending",
@@ -38,4 +39,11 @@ export class Quote extends BaseEntity {
 
     @OneToMany(type => QuoteItem, item => item.quote)
     public items: QuoteItem[];
+
+    @Column({type: 'boolean', default: false})
+    public approved: boolean;
+
+    @OneToOne(type => Signature, {nullable: true})
+    @JoinColumn()
+    public signature?: Signature;
 }
