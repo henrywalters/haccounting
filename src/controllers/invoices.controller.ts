@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post } from "@nestjs/common";
 import { InvoiceDto } from "src/dtos/invoice.dto";
 import { AccountingService } from "src/services/accounting.service";
 import { getConnection } from "typeorm";
@@ -23,5 +23,10 @@ export class InvoicesController {
         return await getConnection().transaction(async trans => {
             return await this.accounting.getInvoice(id, trans);
         });
+    }
+
+    @Delete(':id')
+    public async voidInvoice(@Param('id', ParseUUIDPipe) id: string) {
+        return await this.accounting.voidInvoice(id);
     }
 }

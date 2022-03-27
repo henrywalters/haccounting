@@ -124,7 +124,8 @@ export class AccountingService {
 
             for (let i = 0; i < project.tasks.length; i++) {
                 const task = project.tasks[i];
-                const balance = task.actualHours - task.billedHours;
+                console.log(task);
+                const balance = task.estimatedHours - task.billedHours;
                 if (balance != 0) {
                     const item = new QuoteItem();
                     item.quote = quote;
@@ -159,6 +160,14 @@ export class AccountingService {
             await trans.save(signature);
             await trans.save(quote);
         });
+    }
+
+    public async voidQuote(quoteId: string) {
+        return await getConnection().transaction(async trans => {
+            const quote = await this.getQuote(quoteId, trans);
+            quote.status = QuoteStatus.VOID;
+            await quote.save();
+        })
     }
 
     // Invoices
@@ -293,6 +302,40 @@ export class AccountingService {
 
             return invoice;
         })
+    }
+
+    public async createInvoiceForQuote(quoteId: string) {
+        return await getConnection().transaction(async trans => {
+            const quote = await this.getQuote(quoteId, trans);
+            const items: InvoiceItem[] = [];
+            const invoice = new Invoice();
+            invoice.invoiceId = await this.getNextInvoiceId(quote.client, trans);
+            invoice.date = new Date();
+            invoice.client = quote.client;
+            invoice.status = InvoiceStatus.INVOICED;
+
+            for (let i = 0; i < quote.items.length; i++) {
+                const task = quote.items[i];
+                const item = new InvoiceItem();
+                item.invoice = invoice;
+                item.invoiceItemId = `${invoice.invoiceId}-${i + 1}`;
+                item.title = task.title;
+                item.description = task.description;
+                item.rate = task.rate;
+                item.quantity = task.quantity;
+
+                items.push(item);
+            }
+
+            if (items.length === 0) {
+                throw new Error("Nothing to be billed for this project");
+            }
+
+            await trans.save(invoice);
+            await trans.save(items);
+
+            return invoice;
+        });
     }
 
     public async payInvoice(invoiceId: string, amount: number, cardId: string) {

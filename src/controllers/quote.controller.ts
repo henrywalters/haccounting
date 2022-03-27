@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post } from "@nestjs/common";
 import { InvoiceDto } from "src/dtos/invoice.dto";
 import { QuoteApproveDto, QuoteDto } from "src/dtos/quote.dto";
 import { AccountingService } from "src/services/accounting.service";
@@ -29,5 +29,15 @@ export class QuotesController {
     @Post(':id/approve')
     public async approveQuote(@Param('id', ParseUUIDPipe) id: string, @Body() dto: QuoteApproveDto) {
         return await this.accounting.approveQuote(id, dto);
+    }
+
+    @Post(':id/convert')
+    public async convertQuote(@Param('id', ParseUUIDPipe) id: string) {
+        return await this.accounting.createInvoiceForQuote(id);
+    }
+
+    @Delete(':id')
+    public async deleteQuote(@Param('id', ParseUUIDPipe) id: string) {
+        await this.accounting.voidQuote(id);
     }
 }
