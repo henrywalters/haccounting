@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { EZMailerClient } from "ezmailer-client";
+import { Sender, EmailTemplate, EmailPriority } from "ezmailer-client/dist/types"
 import { CardPaymentDto } from "src/dtos/cardPayment.dto";
 import { InvoiceDto } from "src/dtos/invoice.dto";
 import { QuoteApproveDto, QuoteDto } from "src/dtos/quote.dto";
@@ -12,11 +14,28 @@ import { QuoteItem } from "src/entities/quoteItem.entity";
 import { Signature } from "src/entities/signature.entity";
 import { EntityManager, getConnection } from "typeorm";
 import { StripeService } from "./stripe.service";
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class AccountingService {
 
-    constructor(private readonly stripe: StripeService) {}
+    private ezmailer: EZMailerClient;
+    private sender: Sender;
+    private paymentTemplate: EmailTemplate;
+
+    constructor(private readonly stripe: StripeService) {
+        this.ezmailer = new EZMailerClient(process.env.EZMAILER_API, process.env.EZMAILER_KEY);
+        this.ezmailer.getSender(process.env.EZMAILER_SENDER_ID).then((sender) => { this.sender = sender; });
+        this.ezmailer.getTemplate(process.env.EZMAILER_PAYMENT_TEMPLATE_ID).then((template) => { this.paymentTemplate = template; });
+    }
+
+    public getDate(date?: Date) {
+        return (date ? DateTime.fromJSDate(date) : new DateTime()).toLocaleString(DateTime.DATE_SHORT);
+    }
+
+    public getDateTime(date?: Date) {
+        return (date ? DateTime.fromJSDate(date) : new DateTime()).toLocaleString(DateTime.DATETIME_SHORT);
+    }
 
     // Quotes
 
@@ -341,8 +360,12 @@ export class AccountingService {
     public async payInvoice(invoiceId: string, amount: number, cardId: string) {
         return await getConnection().transaction(async trans => {
             const invoice = await this.getInvoice(invoiceId, trans);
+            const currencyFmt = new Intl.NumberFormat('en-us', {
+                style: 'currency',
+                currency: 'USD'
+            })
             if (amount > invoice.totalAmountOwed) {
-                throw new Error("Amount exceeds total amounted owed by: " + (amount - invoice.totalAmountOwed));
+                throw new Error("We appreciate you trying to pay more, but we won't accept it! Amount exceeds total by " + currencyFmt.format(amount - invoice.totalAmountOwed));
             }
 
             await this.stripe.chargeClient(invoice.client, amount, cardId, `Invoice #${invoice.invoiceId}`);
@@ -361,7 +384,23 @@ export class AccountingService {
             await trans.save(invoice);
             await trans.save(payment);
 
-            return invoice;
+            if (payment.client.contactEmail) {
+                await this.ezmailer.sendEmail(this.sender, this.paymentTemplate, {
+                    subject: "Henry Walters Development: Payment Receipt",
+                    to: [payment.client.contactEmail],
+                    cc: [],
+                    priority: EmailPriority.High,
+                    bcc: ['me@henrywalters.dev'],
+                    context: {
+                        name: payment.client.contactName,
+                        amount: payment.amount,
+                        timestamp: this.getDateTime(),
+                        invoiceId: payment.invoice.invoiceId,
+                    }
+                })
+
+            }
+            return payment;
         });
     }
 
@@ -371,6 +410,15 @@ export class AccountingService {
             invoice.status = InvoiceStatus.VOID;
             await trans.save(invoice);
             return invoice;
+        });
+    }
+
+    public async getPayment(paymentId: string) {
+        return await Payment.findOne({
+            relations: ['client', 'invoice', 'invoice.payments'],
+            where: {
+                id: paymentId
+            }
         });
     }
 }

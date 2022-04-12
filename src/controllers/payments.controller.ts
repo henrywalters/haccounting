@@ -1,4 +1,4 @@
-import { Body, Controller, InternalServerErrorException, Post } from "@nestjs/common";
+import { Body, Controller, Get, InternalServerErrorException, Param, Post } from "@nestjs/common";
 import { ClientPaymentDto } from "../dtos/client.dto";
 import { AccountingService } from "../services/accounting.service";
 
@@ -16,6 +16,10 @@ export class PaymentsController {
         } catch (e) {
             throw new InternalServerErrorException(e.message);
         }
-        
+    }
+
+    @Get(":id")
+    public async getPayment(@Param("id") id: string) {
+        return await this.accounting.getPayment(id);
     }
 }

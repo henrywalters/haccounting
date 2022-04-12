@@ -36,19 +36,6 @@ export class StripeService {
 
     public async chargeClient(client: Client, amount: number, cardId: string, description?: string) {
         
-        /*const paymentMethod = await this.stripe.paymentMethods.create({
-            // @ts-ignore
-            type: 'card',
-            card: {
-                number: card.number,
-                exp_month: card.expMonth,
-                exp_year: card.expYear,
-                cvc: card.cvc,
-            }
-        });
-
-        console.log(paymentMethod);*/
-        
         const intent = await this.stripe.paymentIntents.create({
             // multiply by ten to use dollars instead of cents
             amount: amount * 100,
@@ -69,9 +56,5 @@ export class StripeService {
         const confirmedIntent = await this.stripe.paymentIntents.confirm(intent.id);
 
         console.log(confirmedIntent);
-
-        //const capturedPayment = await this.stripe.paymentIntents.capture(confirmedIntent.id);
-
-        //console.log(capturedPayment);
     }
 }

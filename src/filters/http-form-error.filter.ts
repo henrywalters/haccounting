@@ -17,6 +17,8 @@ export class BadRequestExceptionFilter implements ExceptionFilter {
 
         let body = null;
 
+        console.log(error);
+
         if (Array.isArray(error.message)) {
             body = {};
 
