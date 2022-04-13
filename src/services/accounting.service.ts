@@ -368,8 +368,6 @@ export class AccountingService {
                 throw new Error("We appreciate you trying to pay more, but we won't accept it! Amount exceeds total by " + currencyFmt.format(amount - invoice.totalAmountOwed));
             }
 
-            await this.stripe.chargeClient(invoice.client, amount, cardId, `Invoice #${invoice.invoiceId}`);
-
             invoice.amountPaid += amount;
 
             if (invoice.amountPaid == invoice.totalAmount) {
@@ -383,6 +381,8 @@ export class AccountingService {
 
             await trans.save(invoice);
             await trans.save(payment);
+
+            await this.stripe.chargeClient(invoice.client, amount, cardId, `Invoice #${invoice.invoiceId}`);
 
             if (payment.client.contactEmail) {
                 await this.ezmailer.sendEmail(this.sender, this.paymentTemplate, {
