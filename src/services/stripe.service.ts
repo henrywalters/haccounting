@@ -16,9 +16,15 @@ export class StripeService {
         this.stripe = new Stripe(this.secretKey, null);
     }
 
+    public async getStripeCustomer(id: string) {
+        return await this.stripe.customers.retrieve(id);
+    }
+
     public async createStripeCustomerForClient(client: Client) {
         if (client.stripeId) {
-            return client;
+            if (await this.getStripeCustomer(client.stripeId)) {
+                return client;
+            }
         }
 
         const customer = await this.stripe.customers.create({
