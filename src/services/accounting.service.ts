@@ -30,11 +30,11 @@ export class AccountingService {
     }
 
     public getDate(date?: Date) {
-        return (date ? DateTime.fromJSDate(date) : new DateTime()).toLocaleString(DateTime.DATE_SHORT);
+        return (date ? DateTime.fromJSDate(date) : DateTime.now()).toLocaleString(DateTime.DATE_SHORT);
     }
 
     public getDateTime(date?: Date) {
-        return (date ? DateTime.fromJSDate(date) : new DateTime()).toLocaleString(DateTime.DATETIME_SHORT);
+        return (date ? DateTime.fromJSDate(date) : DateTime.now()).toLocaleString(DateTime.DATETIME_SHORT);
     }
 
     // Quotes
@@ -393,7 +393,7 @@ export class AccountingService {
                     bcc: ['me@henrywalters.dev'],
                     context: {
                         name: payment.client.contactName,
-                        amount: payment.amount,
+                        amount: currencyFmt.format(payment.amount),
                         timestamp: this.getDateTime(),
                         invoiceId: payment.invoice.invoiceId,
                     }
@@ -415,7 +415,7 @@ export class AccountingService {
 
     public async getPayment(paymentId: string) {
         return await Payment.findOne({
-            relations: ['client', 'invoice', 'invoice.payments'],
+            relations: ['client', 'invoice', 'invoice.payments', 'invoice.items'],
             where: {
                 id: paymentId
             }

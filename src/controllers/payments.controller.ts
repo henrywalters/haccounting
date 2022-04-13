@@ -14,6 +14,7 @@ export class PaymentsController {
         try {
             return await this.accounting.payInvoice(body.invoiceId, body.amount, body.cardId);
         } catch (e) {
+            console.log(e);
             throw new InternalServerErrorException(e.message);
         }
     }
