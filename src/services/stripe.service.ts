@@ -16,13 +16,18 @@ export class StripeService {
         this.stripe = new Stripe(this.secretKey, null);
     }
 
-    public async getStripeCustomer(id: string) {
-        return await this.stripe.customers.retrieve(id);
+    public async stripeCustomerExists(id: string): Promise<boolean> {
+        try {
+            await this.stripe.customers.retrieve(id);
+            return true;
+        } catch (e) {
+            return false;
+        }
     }
 
     public async createStripeCustomerForClient(client: Client) {
         if (client.stripeId) {
-            if (await this.getStripeCustomer(client.stripeId)) {
+            if (await this.stripeCustomerExists(client.stripeId)) {
                 return client;
             }
         }
