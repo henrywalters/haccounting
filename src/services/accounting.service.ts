@@ -192,10 +192,15 @@ export class AccountingService {
     // Invoices
 
     public async getInvoice(id: string, txn: EntityManager) {
-        const invoice = await txn.findOne(Invoice, {
-            where: {id},
-            relations: ['items', 'client', 'payments', 'client.billingAddress', 'client.shippingAddress'],
-        });
+        const invoice = await txn.createQueryBuilder(Invoice, 'invoice')
+            .where('invoice.id = :id', {id})
+            .leftJoinAndSelect('invoice.client', 'client')
+            .leftJoinAndSelect('client.billingAddress', 'billingAddress')
+            .leftJoinAndSelect('client.shippingAddress', 'shippingAddress')
+            .leftJoinAndSelect('invoice.items', 'items')
+            .leftJoinAndSelect('invoice.payments', 'payments')
+            .orderBy('payments.timestamp', 'ASC')
+            .getOne();
 
         if (!invoice) {
             throw new Error("Invoice does not exist");
@@ -205,7 +210,12 @@ export class AccountingService {
     }
 
     public async getInvoices() {
-        return await Invoice.find({relations: ['client', 'items', 'payments']});
+        return await getConnection().createQueryBuilder(Invoice, 'invoice')
+            .leftJoinAndSelect('invoice.client', 'client')
+            .leftJoinAndSelect('invoice.items', 'items')
+            .leftJoinAndSelect('invoice.payments', 'payments')
+            .orderBy('invoice.createdAt', 'ASC')
+            .getMany();
     }
 
     public async getClientInvoices(client: Client) {
@@ -233,6 +243,22 @@ export class AccountingService {
         }
 
         return `${client.invoicePrefix}-${countStr}`;
+    }
+
+    public async getNextPaymentId(invoice: Invoice, txn: EntityManager, leadingZeros = 3) {
+        const {count} = await txn.createQueryBuilder(Payment, 'payment')
+            .where('invoiceId = :invoiceId', {invoiceId: invoice.id})
+            .andWhere('paymentId LIKE :id', {id: `${invoice.invoiceId}-%`})
+            .select('COUNT(id)', 'count')
+            .getRawOne();
+
+        let countStr = (parseInt(count) + 1).toFixed(0);
+
+        for (let i = 0; i < leadingZeros - countStr.length; i++) {
+            countStr = '0' + countStr;
+        }
+
+        return `${invoice.invoiceId}-${countStr}`;
     }
 
     public async createInvoice(clientId: string, dto: InvoiceDto) {
@@ -365,7 +391,8 @@ export class AccountingService {
                 currency: 'USD'
             })
             if (amount > invoice.totalAmountOwed) {
-                throw new Error("We appreciate you trying to pay more, but we won't accept it! Amount exceeds total by " + currencyFmt.format(amount - invoice.totalAmountOwed));
+                throw new Error(
+                    `We appreciate you trying to pay more, but we won't accept it! Amount exceeds total by ${currencyFmt.format(amount - invoice.totalAmountOwed)}`);
             }
 
             invoice.amountPaid += amount;
@@ -375,30 +402,36 @@ export class AccountingService {
             }
 
             const payment = new Payment();
+            payment.paymentId = await this.getNextPaymentId(invoice, trans);
+            console.log(payment.paymentId);
             payment.invoice = invoice;
             payment.client = invoice.client;
             payment.amount = amount;
 
+            await this.stripe.chargeClient(invoice.client, amount, cardId, `Invoice #${invoice.invoiceId}`);
+
             await trans.save(invoice);
             await trans.save(payment);
 
-            await this.stripe.chargeClient(invoice.client, amount, cardId, `Invoice #${invoice.invoiceId}`);
-
             if (payment.client.contactEmail) {
-                await this.ezmailer.sendEmail(this.sender, this.paymentTemplate, {
-                    subject: "Henry Walters Development: Payment Receipt",
-                    to: [payment.client.contactEmail],
-                    cc: [],
-                    priority: EmailPriority.High,
-                    bcc: ['me@henrywalters.dev'],
-                    context: {
-                        name: payment.client.contactName,
-                        amount: currencyFmt.format(payment.amount),
-                        timestamp: this.getDateTime(),
-                        invoiceId: payment.invoice.invoiceId,
-                    }
-                })
-
+                try {
+                    await this.ezmailer.sendEmail(this.sender, this.paymentTemplate, {
+                        subject: "Henry Walters Development: Payment Receipt",
+                        to: [payment.client.contactEmail],
+                        cc: [],
+                        priority: EmailPriority.High,
+                        bcc: ['me@henrywalters.dev'],
+                        context: {
+                            name: payment.client.contactName,
+                            amount: currencyFmt.format(payment.amount),
+                            timestamp: this.getDateTime(),
+                            invoiceId: payment.invoice.invoiceId,
+                            paymentId: payment.paymentId,
+                        }
+                    })
+                } catch (e) {
+                    console.warn("FAILED TO SEND EMAIL: " + e.message);
+                }
             }
             return payment;
         });

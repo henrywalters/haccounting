@@ -8,8 +8,13 @@ export class Payment extends BaseEntity {
     @CreateDateColumn()
     public timestamp: Date;
 
+    // Internal ID
     @PrimaryGeneratedColumn('uuid')
     public id: string;
+
+    // External ID
+    @Column()
+    public paymentId: string;
 
     @Column({type: 'float'})
     public amount: number;

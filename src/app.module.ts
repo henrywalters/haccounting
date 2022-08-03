@@ -11,11 +11,18 @@ import { PaymentsController } from './controllers/payments.controller';
 import { ProjectsController } from './controllers/projects.controller';
 import { InvoicesController } from './controllers/invoices.controller';
 import { QuotesController } from './controllers/quote.controller';
+import { PDFModule } from '@t00nday/nestjs-pdf';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    PDFModule.register({
+      view: {
+        root: './templates',
+        engine: 'pug',
+      }
     }),
     TypeOrmModule.forRoot(),
   ],

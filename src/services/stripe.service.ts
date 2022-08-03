@@ -62,10 +62,6 @@ export class StripeService {
             description,
         });
 
-        console.log(intent);
-
         const confirmedIntent = await this.stripe.paymentIntents.confirm(intent.id);
-
-        console.log(confirmedIntent);
     }
 }
